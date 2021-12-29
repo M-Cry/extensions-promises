@@ -236,6 +236,10 @@ var LanguageCode;
 })(LanguageCode = exports.LanguageCode || (exports.LanguageCode = {}));
 
 },{}],10:[function(require,module,exports){
+arguments[4][5][0].apply(exports,arguments)
+},{"dup":5}],11:[function(require,module,exports){
+arguments[4][5][0].apply(exports,arguments)
+},{"dup":5}],12:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MangaStatus = void 0;
@@ -245,11 +249,7 @@ var MangaStatus;
     MangaStatus[MangaStatus["COMPLETED"] = 0] = "COMPLETED";
 })(MangaStatus = exports.MangaStatus || (exports.MangaStatus = {}));
 
-},{}],11:[function(require,module,exports){
-arguments[4][5][0].apply(exports,arguments)
-},{"dup":5}],12:[function(require,module,exports){
-arguments[4][5][0].apply(exports,arguments)
-},{"dup":5}],13:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 arguments[4][5][0].apply(exports,arguments)
 },{"dup":5}],14:[function(require,module,exports){
 arguments[4][5][0].apply(exports,arguments)
@@ -323,7 +323,54 @@ __exportStar(require("./TrackObject"), exports);
 __exportStar(require("./OAuth"), exports);
 __exportStar(require("./UserForm"), exports);
 
-},{"./Chapter":5,"./ChapterDetails":6,"./Constants":7,"./HomeSection":8,"./Languages":9,"./Manga":10,"./MangaTile":11,"./MangaUpdate":12,"./OAuth":13,"./PagedResults":14,"./RequestHeaders":15,"./RequestManager":16,"./RequestObject":17,"./ResponseObject":18,"./SearchRequest":19,"./SourceInfo":20,"./SourceTag":21,"./TagSection":22,"./TrackObject":23,"./UserForm":24}],26:[function(require,module,exports){
+},{"./Chapter":6,"./ChapterDetails":5,"./Constants":7,"./HomeSection":8,"./Languages":9,"./Manga":12,"./MangaTile":10,"./MangaUpdate":11,"./OAuth":13,"./PagedResults":14,"./RequestHeaders":15,"./RequestManager":16,"./RequestObject":17,"./ResponseObject":18,"./SearchRequest":19,"./SourceInfo":20,"./SourceTag":21,"./TagSection":22,"./TrackObject":23,"./UserForm":24}],26:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.chapGroup = exports.chapVol = exports.chapName = exports.chapNum = exports.chapId = exports.unixToDate = void 0;
+// Common Functions
+exports.unixToDate = (unix) => {
+    const date = parseInt(unix);
+    if (isNaN(date))
+        return undefined;
+    return new Date(date * 1000);
+};
+// Chapter functions
+exports.chapId = (key, groupKey, folder, mangaId) => {
+    if (!key || key === undefined)
+        throw new Error(`Chapter key in id: ${mangaId} is undefined.`);
+    if (!groupKey || groupKey === undefined)
+        throw new Error(`Group key in id: ${mangaId} is undefined.`);
+    if (!folder || folder === undefined)
+        throw new Error(`Folder in id: ${mangaId} is undefined.`);
+    return `${key}|${groupKey}|${folder}`;
+};
+exports.chapNum = (num, mangaId, chapId) => {
+    if (!num || num === undefined)
+        throw new Error(`Chapter number in id: ${mangaId}@ ${chapId} is undefined.`);
+    const parsed = parseInt(num);
+    if (isNaN(parsed))
+        throw new Error(`Chapter number in id: ${mangaId}@ ${chapId} is malformed.`);
+    return parsed;
+};
+exports.chapName = (name) => {
+    if (!name)
+        return undefined;
+};
+exports.chapVol = (vol, mangaId, chapId) => {
+    if (!vol)
+        return undefined;
+    const parsed = parseInt(vol);
+    if (isNaN(parsed))
+        throw new Error(`Volume number in: ${mangaId}@ ${chapId} is malformed.`);
+    return parsed;
+};
+exports.chapGroup = (group) => {
+    if (!group)
+        return undefined;
+    return group;
+};
+
+},{}],27:[function(require,module,exports){
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -335,174 +382,300 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Guya = exports.GuyaInfo = void 0;
+exports.Hachirumi = exports.HachirumiInfo = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
-const GUYA_API_BASE = "https://guya.moe";
-const GUYA_SERIES_API_BASE = `${GUYA_API_BASE}/api/series`;
-const GUYA_ALL_SERIES_API = `${GUYA_API_BASE}/api/get_all_series/`;
-const GUYA_LANG = "en";
-const SPLIT_VAR = "|";
-exports.GuyaInfo = {
-    version: "1.1.1",
-    name: "Guya",
+const Functions_1 = require("./Functions");
+const HACHIRUMI_DOMAIN = "https://hachirumi.com";
+const HACHIRUMI_API = `${HACHIRUMI_DOMAIN}/api`;
+const HACHIRUMI_IMAGES = (slug, folder, group, ext) => `https://hachirumi.com/media/manga/${slug}/chapters/${folder}/${group}/${ext}`;
+exports.HachirumiInfo = {
+    version: "1.0.0",
+    name: "Hachirumi",
     icon: "icon.png",
-    author: "funkyhippo",
-    authorWebsite: "https://github.com/funkyhippo",
-    description: "Extension that pulls manga from guya.moe",
-    language: GUYA_LANG,
+    author: "Curstantine",
+    authorWebsite: "https://github.com/Curstantine",
+    description: "Extension that pulls manga from Hachirumi.",
+    language: paperback_extensions_common_1.LanguageCode.ENGLISH,
     hentaiSource: false,
-    websiteBaseURL: GUYA_API_BASE
+    websiteBaseURL: HACHIRUMI_DOMAIN,
 };
-class Guya extends paperback_extensions_common_1.Source {
+class Hachirumi extends paperback_extensions_common_1.Source {
+    /*
+    Though "mangaId" is mentioned here Hachirumi uses slugs.
+    eg: the-story-about-living
+    */
     getMangaDetails(mangaId) {
         return __awaiter(this, void 0, void 0, function* () {
-            let request = createRequestObject({
-                metadata: { mangaId },
-                url: GUYA_ALL_SERIES_API,
+            const methodName = this.getMangaDetails.name;
+            const request = createRequestObject({
+                url: HACHIRUMI_API + "/series/" + mangaId,
                 method: "GET",
+                headers: {
+                    "accept-encoding": "application/json",
+                },
             });
-            let response = yield this.requestManager.schedule(request, 1);
-            let result = typeof response.data === "string" ? JSON.parse(response.data) : response.data;
-            let mangas = [];
-            for (let series in result) {
-                let seriesDetails = result[series];
-                if (mangaId.includes(seriesDetails["slug"])) {
-                    mangas.push(createManga({
-                        id: seriesDetails["slug"],
-                        titles: [series],
-                        image: `${GUYA_API_BASE}/${seriesDetails["cover"]}`,
-                        rating: 5,
-                        status: paperback_extensions_common_1.MangaStatus.ONGOING,
-                        artist: seriesDetails["artist"],
-                        author: seriesDetails["author"],
-                        desc: seriesDetails["description"],
-                    }));
-                }
+            const response = yield this.requestManager.schedule(request, 1);
+            if (response.status > 400) {
+                throw new Error(`Failed to fetch data on ${methodName} with status code: ` +
+                    response.status);
             }
-            return mangas[0];
+            const result = typeof response.data === "string" || typeof response.data !== "object"
+                ? JSON.parse(response.data)
+                : response.data;
+            if (!result || result === undefined)
+                throw new Error(`Failed to parse the response on ${methodName}.`);
+            return createManga({
+                id: result.slug,
+                titles: [result.title],
+                image: HACHIRUMI_DOMAIN + result.cover,
+                rating: 0,
+                status: paperback_extensions_common_1.MangaStatus.ONGOING,
+                artist: result.artist,
+                author: result.author,
+                desc: "Hachirumi doesn't support descriptions!",
+            });
         });
     }
+    /*
+    Follows the same format as `getMangaDetails`.
+    Hachirumi serves both chapters and manga in single request.
+    */
     getChapters(mangaId) {
         return __awaiter(this, void 0, void 0, function* () {
-            let request = createRequestObject({
-                metadata: { mangaId },
-                url: `${GUYA_SERIES_API_BASE}/${mangaId}/`,
+            const methodName = this.getChapters.name;
+            const request = createRequestObject({
+                url: HACHIRUMI_API + "/series/" + mangaId,
                 method: "GET",
+                headers: {
+                    "accept-encoding": "application/json",
+                },
             });
-            let response = yield this.requestManager.schedule(request, 1);
-            let result = typeof response.data === "string" ? JSON.parse(response.data) : response.data;
-            let rawChapters = result["chapters"];
-            let groupMap = result["groups"];
+            const response = yield this.requestManager.schedule(request, 1);
+            if (response.status > 400) {
+                throw new Error(`Failed to fetch data on ${methodName} with status code: ` +
+                    response.status);
+            }
+            const result = typeof response.data === "string" || typeof response.data !== "object"
+                ? JSON.parse(response.data)
+                : response.data;
+            if (!result || result === undefined)
+                throw new Error(`Failed to parse the response on ${methodName}.`);
+            const chapterObject = result.chapters;
+            const groupObject = result.groups;
+            if (!chapterObject || !groupObject)
+                throw new Error(`Failed to read chapter/group data on ${methodName}.`);
             let chapters = [];
-            for (let chapter in rawChapters) {
-                let chapterMetadata = rawChapters[chapter];
-                for (let group in chapterMetadata["groups"]) {
+            for (const key in chapterObject) {
+                const metadata = chapterObject[key];
+                if (!metadata || metadata === undefined)
+                    throw new Error(`Failed to read metadata on ${methodName}.`);
+                for (const groupKey in metadata.groups) {
+                    const id = Functions_1.chapId(key, groupKey, metadata.folder, result.slug);
                     chapters.push(createChapter({
-                        id: `${chapter}${SPLIT_VAR}${group}`,
-                        mangaId: mangaId,
-                        chapNum: Number(chapter),
+                        id: id,
+                        mangaId: result.slug,
+                        chapNum: Functions_1.chapNum(key, result.slug, id),
                         langCode: paperback_extensions_common_1.LanguageCode.ENGLISH,
-                        name: chapterMetadata["title"],
-                        volume: chapterMetadata["volume"],
-                        group: groupMap[group],
-                        time: new Date(Number(chapterMetadata["release_date"][group]) * 1000),
+                        name: Functions_1.chapName(metadata.title),
+                        volume: Functions_1.chapVol(metadata.volume, result.slug, id),
+                        group: Functions_1.chapGroup(groupObject[groupKey]),
+                        time: Functions_1.unixToDate(metadata.release_date[groupKey]),
                     }));
                 }
             }
             return chapters;
         });
     }
+    /*
+     * Follows the chapterId format used  in `getChapter` method.
+     * `chapterKey|groupKey|folderId`
+     */
     getChapterDetails(mangaId, chapterId) {
         return __awaiter(this, void 0, void 0, function* () {
+            const methodName = this.getChapterDetails.name;
             const request = createRequestObject({
-                url: `${GUYA_SERIES_API_BASE}/${mangaId}/`,
+                url: HACHIRUMI_API + "/series/" + mangaId,
                 method: "GET",
+                headers: {
+                    "accept-encoding": "application/json",
+                },
             });
-            const data = yield this.requestManager.schedule(request, 1);
-            let result = typeof data.data === "string" ? JSON.parse(data.data) : data.data;
-            let rawChapters = result["chapters"];
-            let [chapter, group] = chapterId.split(SPLIT_VAR);
+            const response = yield this.requestManager.schedule(request, 1);
+            if (response.status > 400) {
+                throw new Error(`Failed to fetch data on ${methodName} with status code: ` +
+                    response.status);
+            }
+            const result = typeof response.data === "string" || typeof response.data !== "object"
+                ? JSON.parse(response.data)
+                : response.data;
+            if (!result || result === undefined)
+                throw new Error(`Failed to parse the response on ${methodName}.`);
+            const [chapterKey, groupKey, folder] = chapterId.split("|"); // Splits the given generic chapter id to chapterkey and such.
+            if (!chapterKey || !groupKey || !folder)
+                throw new Error(`ChapterId is malformed on ${methodName}.`);
+            const chapterObject = result.chapters;
+            if (!chapterObject || chapterObject === undefined)
+                throw new Error(`Failed to read chapter data on ${methodName}.`);
+            const groupObject = chapterObject[chapterKey].groups[groupKey];
+            if (!groupObject || groupObject === undefined)
+                throw new Error(`Failed to read chapter metadata on ${methodName}.`);
             return createChapterDetails({
                 id: chapterId,
                 longStrip: false,
                 mangaId: mangaId,
-                pages: rawChapters[chapter]["groups"][group].map((page) => `${GUYA_API_BASE}/media/manga/${mangaId}/chapters/${rawChapters[chapter]["folder"]}/${group}/${page}`),
+                pages: groupObject.map((ext) => HACHIRUMI_IMAGES(mangaId, folder, groupKey, ext)),
             });
         });
     }
-    searchRequest(searchQuery, metadata) {
-        var _a;
+    /*
+    This method doesn't query anything, instead finds a specific title from `get_all_series` endpoint
+     */
+    searchRequest(query, metadata) {
         return __awaiter(this, void 0, void 0, function* () {
+            const methodName = this.searchRequest.name;
+            if (metadata === null || metadata === void 0 ? void 0 : metadata.limitReached)
+                return createPagedResults({
+                    results: [],
+                    metadata: { limitReached: true },
+                }); // Prevents title duplication.
             const request = createRequestObject({
-                url: GUYA_ALL_SERIES_API,
+                url: HACHIRUMI_API + "/get_all_series",
                 method: "GET",
+                headers: {
+                    "accept-encoding": "application/json",
+                },
             });
-            const data = yield this.requestManager.schedule(request, 1);
-            let result = typeof data.data === "string" ? JSON.parse(data.data) : data.data;
-            let query = (_a = searchQuery.title) !== null && _a !== void 0 ? _a : '';
-            let filteredResults = Object.keys(result).filter((e) => e.toLowerCase().includes(query.toLowerCase()));
-            let tiles = filteredResults.map((series) => {
-                let seriesMetadata = result[series];
+            const response = yield this.requestManager.schedule(request, 1);
+            if (response.status > 400) {
+                throw new Error(`Failed to fetch data on ${methodName} with status code: ` +
+                    response.status);
+            }
+            const result = typeof response.data === "string" || typeof response.data !== "object"
+                ? JSON.parse(response.data)
+                : response.data;
+            if (!result || result === undefined)
+                throw new Error(`Failed to parse the response on ${methodName}.`);
+            const queryTitle = query.title ? query.title.toLowerCase() : "";
+            const filterer = (titles) => Object.keys(titles).filter((title) => title.replace("-", " ").toLowerCase().includes(queryTitle));
+            const filteredRequest = filterer(result).map((title) => {
+                const metadata = result[title];
+                if (!metadata || metadata === undefined)
+                    throw new Error(`Failed to read chapter metadata on ${methodName}.`);
                 return createMangaTile({
-                    id: seriesMetadata["slug"],
-                    image: `${GUYA_API_BASE}/${seriesMetadata["cover"]}`,
-                    title: createIconText({ text: series }),
+                    id: metadata.slug,
+                    image: HACHIRUMI_DOMAIN + metadata.cover,
+                    title: createIconText({ text: title }),
                 });
             });
             return createPagedResults({
-                results: tiles
+                results: filteredRequest,
+                metadata: {
+                    limitReached: true,
+                },
+            });
+        });
+    }
+    // Makes my life easier. <(￣︶￣)>
+    getAllTitles() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const methodName = this.getAllTitles.name;
+            const request = createRequestObject({
+                url: HACHIRUMI_API + "/get_all_series",
+                method: "GET",
+                headers: {
+                    "accept-encoding": "application/json",
+                },
+            });
+            const response = yield this.requestManager.schedule(request, 1);
+            if (!response || response === undefined)
+                throw new Error(`Failed to fetch data from the server on ${methodName}.`);
+            const result = typeof response.data === "string" || typeof response.data !== "object"
+                ? JSON.parse(response.data)
+                : response.data;
+            if (!result || result === undefined)
+                throw new Error(`Failed to parse the response on ${methodName}.`);
+            return Object.keys(result).map((title) => {
+                const metadata = result[title];
+                if (!metadata || metadata === undefined)
+                    throw new Error(`Failed to read chapter metadata on ${methodName}.`);
+                return {
+                    mangaId: metadata.slug,
+                    title: title,
+                    author: metadata.author,
+                    artist: metadata.artist,
+                    desc: metadata.description,
+                    cover: metadata.cover,
+                    group: Object.keys(metadata.groups).map((key) => metadata.groups[key]),
+                    last: metadata.last_updated,
+                };
             });
         });
     }
     getHomePageSections(sectionCallback) {
         return __awaiter(this, void 0, void 0, function* () {
-            // Send the empty homesection back so the app can preload the section
-            var homeSection = createHomeSection({ id: "all_guya", title: "ALL GUYA" });
-            sectionCallback(homeSection);
-            const request = createRequestObject({
-                url: GUYA_ALL_SERIES_API,
-                method: "GET"
+            let latestSection = createHomeSection({
+                id: "latest",
+                title: "Latest Updates",
+                view_more: false,
             });
-            const data = yield this.requestManager.schedule(request, 1);
-            let result = typeof data.data === "string" ? JSON.parse(data.data) : data.data;
-            let mangas = [];
-            for (let series in result) {
-                let seriesDetails = result[series];
-                mangas.push(createMangaTile({
-                    id: seriesDetails["slug"],
-                    image: `${GUYA_API_BASE}/${seriesDetails["cover"]}`,
-                    title: createIconText({ text: series }),
-                }));
-            }
-            homeSection.items = mangas;
-            sectionCallback(homeSection);
+            let allSection = createHomeSection({
+                id: "all",
+                title: "All Titles",
+                view_more: true,
+            });
+            sectionCallback(latestSection);
+            sectionCallback(allSection);
+            const allTitles = yield this.getAllTitles();
+            allSection.items = allTitles.map((title) => createMangaTile({
+                id: title.mangaId,
+                image: HACHIRUMI_DOMAIN + title.cover,
+                title: createIconText({ text: title.title }),
+            }));
+            sectionCallback(allSection);
+            const sortedTitles = allTitles.sort((a, b) => b.last - a.last);
+            while (sortedTitles.length > 9)
+                sortedTitles.pop();
+            while (allTitles.length > 9)
+                allTitles.pop();
+            latestSection.items = sortedTitles.map((title) => createMangaTile({
+                id: title.mangaId,
+                image: HACHIRUMI_DOMAIN + title.cover,
+                title: createIconText({ text: title.title }),
+            }));
+            sectionCallback(latestSection);
         });
     }
-    filterUpdatedManga(mangaUpdatesFoundCallback, time, ids) {
+    getViewMoreItems(homepageSectionId, metadata) {
         return __awaiter(this, void 0, void 0, function* () {
-            const request = createRequestObject({
-                url: GUYA_ALL_SERIES_API,
-                method: "GET"
+            if (metadata === null || metadata === void 0 ? void 0 : metadata.limitReached)
+                return createPagedResults({
+                    results: [],
+                    metadata: { limitReached: true },
+                }); // Prevents title duplication.
+            const allTitles = yield this.getAllTitles();
+            return createPagedResults({
+                results: allTitles.map((title) => createMangaTile({
+                    id: title.mangaId,
+                    image: HACHIRUMI_DOMAIN + title.cover,
+                    title: createIconText({ text: title.title }),
+                })),
+                metadata: {
+                    limitReached: true,
+                },
             });
-            const data = yield this.requestManager.schedule(request, 1);
-            let result = typeof data.data === "string" ? JSON.parse(data.data) : data.data;
-            let foundIds = [];
-            for (let series in result) {
-                const seriesDetails = result[series];
-                const seriesUpdated = new Date(seriesDetails["last_updated"] * 1000);
-                const id = seriesDetails["slug"];
-                if (seriesUpdated >= time && ids.includes(id)) {
-                    foundIds.push(id);
-                }
-            }
-            mangaUpdatesFoundCallback(createMangaUpdates({ ids: foundIds }));
         });
     }
     getMangaShareUrl(mangaId) {
-        return `${GUYA_API_BASE}/read/manga/${mangaId}/`;
+        return `${HACHIRUMI_DOMAIN}/read/manga/${mangaId}/`;
+    }
+    getCloudflareBypassRequest() {
+        return createRequestObject({
+            url: HACHIRUMI_DOMAIN,
+            method: "GET",
+        });
     }
 }
-exports.Guya = Guya;
+exports.Hachirumi = Hachirumi;
 
-},{"paperback-extensions-common":4}]},{},[26])(26)
+},{"./Functions":26,"paperback-extensions-common":4}]},{},[27])(27)
 });
